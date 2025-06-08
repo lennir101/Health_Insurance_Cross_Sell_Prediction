@@ -1,0 +1,11 @@
+Fixed params evaluation (20250512_165711)
+
+Fold 1: Recall=0.7539, F1=0.4588, AUC=0.8572
+Fold 2: Recall=0.7531, F1=0.4561, AUC=0.8561
+Fold 3: Recall=0.7571, F1=0.4586, AUC=0.8578
+Fold 4: Recall=0.7610, F1=0.4601, AUC=0.8591
+Fold 5: Recall=0.7638, F1=0.4634, AUC=0.8601
+
+Mean Recall = 0.7578 ± 0.0041
+Mean F1     = 0.4594 ± 0.0024
+Mean AUC    = 0.8581 ± 0.0014

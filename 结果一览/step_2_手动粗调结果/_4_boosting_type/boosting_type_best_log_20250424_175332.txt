@@ -1,0 +1,11 @@
+boosting_type 参数调优报告
+时间：2025-04-24 17:53:33
+
+固定阈值：0.33
+固定 scale_pos_weight：2.0
+最佳 boosting_type：gbdt
+F1-score：0.4530
+Recall：0.7859
+Precision：0.3182
+AUC：0.8529
+Best Iteration：53

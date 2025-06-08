@@ -1,0 +1,106 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from lightgbm import LGBMClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import f1_score, recall_score, precision_score, roc_auc_score
+from sklearn.preprocessing import LabelEncoder
+from datetime import datetime
+import os
+
+# ✅ 路径设置（请替换为你实际路径）
+file_path = r"E:\software\Jetbrains\Python Project\25_1__ML_learn\项目练习_25_4_11_Health Insurance Cross Sell Prediction 🏠 🏥\数据源\archive\train_处理后数据.csv"
+output_path = r"E:\software\Jetbrains\Python Project\25_1__ML_learn\项目练习_25_4_11_Health Insurance Cross Sell Prediction 🏠 🏥\结果一览\step_2_手动粗调结果"
+
+os.makedirs(output_path, exist_ok=True)
+
+# ✅ 读取数据
+df = pd.read_csv(file_path)
+y = df["Response"]
+X = df.drop(columns=["Response", "id"], errors="ignore")
+
+# ✅ LabelEncoder 编码类别特征
+categorical_cols = X.select_dtypes(include='object').columns
+le = LabelEncoder()
+for col in categorical_cols:
+    X[col] = le.fit_transform(X[col])
+
+# ✅ 使用 10% 数据
+X_sample, _, y_sample, _ = train_test_split(X, y, train_size=0.1, stratify=y, random_state=42)
+
+# ✅ 固定最佳阈值
+fixed_best_threshold = 0.33
+
+# ✅ 设置 scale_pos_weight 测试范围
+scale_weights = np.round(np.arange(0.5, 10.01, 0.25), 2)
+f1_scores, recalls, precisions, aucs, tree_counts = [], [], [], [], []
+
+# ✅ 固定训练集划分
+X_train, X_valid, y_train, y_valid = train_test_split(X_sample, y_sample, test_size=0.3, stratify=y_sample, random_state=42)
+
+# ✅ 遍历 scale_pos_weight
+for sw in scale_weights:
+    model = LGBMClassifier(
+        num_leaves=31,
+        learning_rate=0.05,
+        n_estimators=1000,
+        early_stopping_rounds=30,
+        scale_pos_weight=sw,
+        random_state=42,
+        n_jobs=-1
+    )
+    model.fit(X_train, y_train, eval_set=[(X_valid, y_valid)], callbacks=[])
+    y_prob = model.predict_proba(X_valid)[:, 1]
+    y_pred = (y_prob > fixed_best_threshold).astype(int)
+
+    f1_scores.append(f1_score(y_valid, y_pred))
+    recalls.append(recall_score(y_valid, y_pred))
+    precisions.append(precision_score(y_valid, y_pred))
+    aucs.append(roc_auc_score(y_valid, y_prob))
+    tree_counts.append(model.best_iteration_)
+
+# ✅ 找到最佳 F1 参数
+best_idx = np.argmax(f1_scores)
+best_weight = scale_weights[best_idx]
+
+# ✅ 时间戳
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+# ✅ 绘图
+plt.figure(figsize=(10, 6))
+plt.plot(scale_weights, f1_scores, label="F1-score", marker='o')
+plt.plot(scale_weights, recalls, label="Recall", linestyle='--')
+plt.plot(scale_weights, precisions, label="Precision", linestyle='-.')
+plt.plot(scale_weights, aucs, label="AUC", linestyle=':', marker='^')
+plt.xlabel("scale_pos_weight")
+plt.ylabel("Score")
+plt.title("scale_pos_weight vs F1 / Recall / Precision / AUC")
+plt.grid()
+plt.legend()
+plt.savefig(os.path.join(output_path, f"scale_pos_weight_all_metrics_{timestamp}.png"))
+plt.close()
+
+# ✅ 保存 CSV 表格
+results_df = pd.DataFrame({
+    "scale_pos_weight": scale_weights,
+    "F1_score": f1_scores,
+    "Recall": recalls,
+    "Precision": precisions,
+    "AUC": aucs,
+    "Best_Iteration": tree_counts
+})
+csv_path = os.path.join(output_path, f"scale_pos_weight_metrics_{timestamp}.csv")
+results_df.to_csv(csv_path, index=False, encoding="utf-8-sig")
+
+# ✅ 保存 TXT 日志
+log_path = os.path.join(output_path, f"scale_pos_weight_best_log_{timestamp}.txt")
+with open(log_path, "w", encoding="utf-8") as f:
+    f.write("最佳 scale_pos_weight 搜索报告（含 AUC，固定阈值）\n")
+    f.write(f"时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+    f.write(f"固定分类阈值：{fixed_best_threshold:.2f}\n")
+    f.write(f"最佳 scale_pos_weight：{best_weight}\n")
+    f.write(f"F1-score：{f1_scores[best_idx]:.4f}\n")
+    f.write(f"Recall：{recalls[best_idx]:.4f}\n")
+    f.write(f"Precision：{precisions[best_idx]:.4f}\n")
+    f.write(f"AUC：{aucs[best_idx]:.4f}\n")
+    f.write(f"Best Iteration：{int(tree_counts[best_idx])}\n")

@@ -1,0 +1,21 @@
+LightGBM 随机搜索调参报告
+时间：2025-04-26 21:31:59
+
+最佳参数组合如下：
+{
+  "threshold": 0.28,
+  "scale_pos_weight": 1.2,
+  "num_leaves": 8,
+  "max_depth": 11,
+  "subsample": 0.2,
+  "colsample_bytree": 0.35,
+  "min_child_samples": 120,
+  "min_child_weight": 0.002,
+  "reg_alpha": 0,
+  "reg_lambda": 2.0,
+  "AUC": 0.8566292998503439,
+  "F1_score": 0.45859764586465107,
+  "Recall": 0.7248990387835201,
+  "Precision": 0.3354181321056394,
+  "Avg_Best_Iteration": 453.8
+}

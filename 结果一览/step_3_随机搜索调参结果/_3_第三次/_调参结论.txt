@@ -1,0 +1,55 @@
+param_space = {
+    "threshold": [0.25, 0.28, 0.30, 0.32, 0.35],
+    "scale_pos_weight": [1.0, 1.2, 1.4],
+    "num_leaves": list(range(4, 10)),  # 4到9
+    "max_depth": list(range(3, 22, 2)),  # 步长缩小到2
+    "subsample": [0.15, 0.2, 0.25],
+    "colsample_bytree": [0.2, 0.25, 0.3, 0.35, 0.4],
+    "min_child_samples": list(range(50, 142, 10)),
+    "min_child_weight": [0.0005, 0.001, 0.0015, 0.002],
+    "reg_alpha": [0, 0.001, 0.002, 0.003, 0.004],
+    "reg_lambda": [0.5, 0.75, 1.0, 1.25, 1.5, 2.0],
+}
+
+
+
+colsample_bytree vs F1-score
+与前面结果相符，0.35附近为最佳，
+下一步测试0.3--0.4区间
+
+max_depth vs F1-score
+两次测试结果存在一定差异，但趋势相一致，拥有9--11、 17两个峰值
+区间大小暂且不要改变，继续细分区间
+
+
+min_child_samples vs F1-score
+与前面两次测试截然相反，需要左右延拓区间进行测试
+尝试在30--161内测试，暂且设置步长为10
+
+min_child_weight vs F1-score
+结果存在一定区别，需要左右延拓
+需要细分到0～0.04测试，
+
+num_leaves vs F1-score
+与前面两次测试结果截然相反，集中于4,7的峰值转移为6,8，差异原因未知
+暂且不改变区间
+
+reg_alpha vs F1-score
+与前面两次测试结果并不矛盾，0附近较好，中、大值下降
+保持 0～0.005 微调，区间步长细化
+
+reg_lambda vs F1-score
+两次测试结果并不矛盾，高于0.5后开始好转，有拐点但趋势微弱
+扩大探索 0.5～2.5
+
+scale_pos_weight vs F1-score
+与前面两次测试结果有矛盾，最高峰值集中于1.2X，同时区间左右两端也有可能未达到峰值，需要进一步拓展区间
+1.4的右区间
+
+subsample vs F1-score
+与前面两次测试存在一定矛盾
+区间需要右延拓，可尝试0.15--0.3
+
+threshold vs F1-score
+结果与前两次测试矛盾，原因疑似与参数改变有关
+需要测试0.15--0.36，步长0.05

@@ -1,0 +1,10 @@
+num_leaves 粗调报告
+时间：2025-04-24 18:01:45
+
+固定参数：boosting_type=gbdt, scale_pos_weight=2.0, threshold=0.33
+最佳 num_leaves：30
+F1-score：0.4522
+Recall：0.7809
+Precision：0.3182
+AUC：0.8524
+Best Iteration：46

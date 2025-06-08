@@ -1,0 +1,10 @@
+参数调参记录报告（scale_pos_weight）
+时间：2025-04-24 16:04:55
+
+最佳 scale_pos_weight：1.0
+AUC：0.8510
+F1-score：0.0159
+Recall：0.0081
+Precision：0.3400
+平均最佳树数（best_iteration_）：104
+结果文件：scale_pos_weight_multi_scores_20250424_160455.csv

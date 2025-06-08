@@ -1,0 +1,10 @@
+最佳 scale_pos_weight 搜索报告（含 AUC，固定阈值）
+时间：2025-04-24 17:47:16
+
+固定分类阈值：0.33
+最佳 scale_pos_weight：2.0
+F1-score：0.4530
+Recall：0.7859
+Precision：0.3182
+AUC：0.8529
+Best Iteration：53

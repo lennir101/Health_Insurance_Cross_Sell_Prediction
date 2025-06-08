@@ -1,0 +1,50 @@
+第一次随机搜索使用的区间：
+# ✅ 参数空间定义
+param_space = {
+    "threshold": [0.30, 0.33, 0.36, 0.40],
+    "scale_pos_weight": [1.6, 2.0, 2.6],
+    "num_leaves": list(range(2, 9)),
+    "max_depth": list(range(3, 21, 3)),
+    "subsample": [0.4, 0.5, 0.6],
+    "colsample_bytree": [0.6, 0.65, 0.7, 0.75],
+    "min_child_samples": list(range(75, 136, 15)),
+    "min_child_weight": [1e-3, 1e-2, 1e-1],
+    "reg_alpha": [0, 0.01, 0.1],
+    "reg_lambda": [0, 0.01, 0.1],
+}
+
+
+colsample_bytree vs F1-score
+0.6时最高，越大F1分数越小，需要查看0.6左侧的区间
+下一步调整为0.35--0.65
+
+max_depth vs F1-score
+拥有6、 15两个峰值，区间暂且不要改变，进行细分
+下一步调整为3--22,2
+
+min_child_samples vs F1-score
+120为最佳值，可以锁定为110--130的区间内；以防万一，需要测试以下75以下的区间
+
+min_child_weight vs F1-score
+需要在0--0.02之间搜索
+
+num_leaves vs F1-score
+3--8内基本持平
+
+reg_alpha vs F1-score
+F1正则化越大，F1参数越低，不大需要该参数
+
+reg_lambda vs F1-score
+无F2正则与0.1参数时，性能差别不大，需要测试0.1--1.0之间的区间
+
+scale_pos_weight vs F1-score
+大体可以确定为是2.0附近的区间，需要进一步测试
+1.4--2.2
+
+subsample vs F1-score
+0.4最小值反而最佳，需要探索0.4左边的区间
+0.1--0.42
+
+threshold vs F1-score
+0.3最小值为最佳，需要探索0.3左边的区间
+0.1-0.33

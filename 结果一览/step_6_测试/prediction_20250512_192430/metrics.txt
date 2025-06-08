@@ -1,0 +1,7 @@
+Prediction report (20250512_192430)
+
+Accuracy : 0.7834
+Precision: 0.3326
+Recall   : 0.7623
+F1-score : 0.4632
+ROC AUC  : 0.8613

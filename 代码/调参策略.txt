@@ -1,0 +1,53 @@
+需要注意的问题：
+1. 标签类别极不平衡，需要增加占比少数样本的权重，使用超参数 scale_pos_weight 解决，前期使用经验值，后期尝试精调
+2. 最后指标需要使用 F1-score ，而不是 accuracy
+3. 早停参数 early_stopping_rounds 建议设置大一些，防止过拟合
+在 Optuna 的 objective 函数中，加入：
+model.fit(X_train, y_train,
+          eval_set=[(X_valid, y_valid)],
+          early_stopping_rounds=30,
+          verbose=False)
+Optuna 会自动记录每次最早停下的表现轮数，同时大大节省每轮评估时间。
+4，由于启用了早停参数，故不再限制 n_estimators，Optuna 会自动选择合适的 n_estimators。
+5. 本项目是从大量不感兴趣的人中精准挑出感兴趣的人（样本标签为0显著多于标签为1的数量），识别少数类才是核心目标，故使用F1作为最终标准
+
+
+
+
+
+①该项目用F1-score作为最终的评价指标，维持整个调参项目的练习全过程
+
+②考虑到时间缘故，该模型调参过程不对树的数量做限制，依靠early_stopping_rounds自动生成最佳树的数量
+
+③大体分为三步，手动粗调 → 网格搜索 → optuma精调
+
+④在手动粗调步骤，我计划调整如下的参数，寻找这些参数的大致范围：
+    boosting_type	'gbdt'	提升类型
+    num_leaves	31	每棵树最大叶子数
+    max_depth	-1	树最大深度
+    subsample	1.0	行采样比例
+    colsample_bytree	1.0	列采样比例
+    min_child_samples	20	最小叶子节点样本数
+考虑到需要早停寻找最佳树的数量，并且数据集的样本标签严重不平衡，在这一步需要增加两项参数：scale_pos_weight与early_stopping_rounds，前者暂时使用经验值，后者需要设定为较大的值
+learning_rate 可固定为 0.05 进行粗调（过大如 0.1 易跳过最佳区域），0.05 是 LightGBM 最常用平衡值。
+
+⑤在网格搜索阶段，使用以上参数组合，并且增加min_child_weight	与 reg_alpha 以及reg_lambda	这三个参数，寻找以上参数组合的最佳范围，，为optuma调参做铺垫
+正则化参数可设较粗的值域，如 [0, 0.1, 1, 5]；
+
+⑥optuma调参，除了使用以上的参数，在这一步需要调整scale_pos_weight，力求寻找最佳的模型性能及其参数
+
+⑦调参时应用的数据量逐步上升
+阶段	数据使用建议	early_stopping_rounds
+手动粗调（快速试探）	用 10% 数据	设为 20~30（较快收敛）
+网格搜索	用 30%	设为 30~50
+Optuna 精调	用 50%	设为 50
+最终模型训练	全量数据（37 万）	不再 early stopping，设最佳 n_estimators 重训
+
+
+
+
+疑问：使用了早停参数，还需要调整 树的数量 吗？
+    无论是或否，学习率什么时候调整？
+想法：通常在 最后模型定型阶段（如：要部署、保存模型时），固定你调参确定的 learning_rate；
+将 n_estimators 明确指定为 之前 best_iteration_ 的平均值 ± 一个保险范围（如加上 10%）；
+或不设早停，直接用指定值（常用于最终训练完整数据的情况）。

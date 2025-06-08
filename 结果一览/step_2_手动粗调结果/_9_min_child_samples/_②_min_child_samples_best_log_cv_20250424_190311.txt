@@ -1,0 +1,10 @@
+min_child_samples 5折交叉验证调参报告
+时间：2025-04-24 19:03:12
+
+固定参数：boosting_type=gbdt, num_leaves=6, max_depth=5, subsample=0.5, colsample_bytree=0.65, scale_pos_weight=2.0, threshold=0.33
+最佳 min_child_samples：105
+F1-score：0.4558
+Recall：0.8127
+Precision：0.3168
+AUC：0.8531
+平均最佳树数（best_iteration_）：311

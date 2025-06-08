@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ../backend:/app/backend
+      - ml_models:/app/backend/ml_models
+    environment:
+      - FLASK_APP=backend/wsgi.py
+      - FLASK_ENV=production
+      - SECRET_KEY=${SECRET_KEY:-devkey_change_in_production}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-jwt_devkey_change_in_production}
+    restart: unless-stopped
+    networks:
+      - app-network
+
+volumes:
+  ml_models:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge 

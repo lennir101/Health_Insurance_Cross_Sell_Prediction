@@ -1,0 +1,124 @@
+https://www.kaggle.com/datasets/anmolkumar/health-insurance-cross-sell-prediction
+
+Health Insurance Cross Sell Prediction 🏠 🏥
+Predict Health Insurance Owners' who will be interested in Vehicle Insurance
+
+任务类型: 二分类（预测用户是否会购买车险）
+
+样本量: 381,109 个样本
+
+特征: 12 个特征（用户年龄、车辆年龄、历史保险数据等）
+
+特点: 适合练习类别特征处理（如 Region_Code）、不平衡数据（正负样本比例约 12:88）、特征交互分析。
+
+
+
+————————————————————————————————————————————————————————————————————
+
+不平衡数据场景
+
+正负样本比例 12:88，典型的不平衡问题，适合练习以下技能：
+
+调整 scale_pos_weight（建议设为 neg_samples / pos_samples ≈ 7.3）或设置 is_unbalance=True。
+
+选择合适的评估指标（如 F1-Score、PR-AUC 而非单纯依赖准确率）。
+
+尝试过采样（SMOTE）或欠采样与 LightGBM 结合的效果。
+
+特征工程空间大
+
+特征如 Vehicle_Age（车龄）、Previously_Insured（是否曾投保）等可直接用于构造交互特征。
+
+——————————————————————————————————————————————————————————————————
+潜在挑战与注意事项
+高基数类别特征
+
+Region_Code 可能有数百个类别，需观察是否导致过拟合：
+
+可尝试 min_data_per_group 参数限制每个类别的最小数据量。
+
+或对低频类别进行合并（如出现次数 <100 的编码归为 "Other"）。
+
+缺失值与异常值
+
+检查 Vehicle_Age、Annual_Premium（年保费）等字段：
+
+若存在极端值（如年保费超过 99% 分位数），可使用 max_bin 调整分箱策略。
+
+缺失值处理：LightGBM 默认支持缺失值，但可尝试填充（如中位数）。
+
+时间相关性问题
+
+数据中可能隐含时间顺序（例如用户投保时间），需注意：
+
+避免未来信息泄漏：确保训练集的时间早于测试集。
+
+若数据无时间字段，可随机拆分（80% 训练，20% 测试）。
+
+——————————————————————————————————————————————————————————————————————
+潜在挑战与注意事项
+高基数类别特征
+
+Region_Code 可能有数百个类别，需观察是否导致过拟合：
+
+可尝试 min_data_per_group 参数限制每个类别的最小数据量。
+
+或对低频类别进行合并（如出现次数 <100 的编码归为 "Other"）。
+
+缺失值与异常值
+
+检查 Vehicle_Age、Annual_Premium（年保费）等字段：
+
+若存在极端值（如年保费超过 99% 分位数），可使用 max_bin 调整分箱策略。
+
+缺失值处理：LightGBM 默认支持缺失值，但可尝试填充（如中位数）。
+
+时间相关性问题
+
+数据中可能隐含时间顺序（例如用户投保时间），需注意：
+
+避免未来信息泄漏：确保训练集的时间早于测试集。
+
+若数据无时间字段，可随机拆分（80% 训练，20% 测试）。
+
+推荐练习方向
+基础流程
+
+直接使用原始特征训练基线模型，观察特征重要性（lgb.plot_importance）。
+
+关键参数初探：learning_rate（0.05-0.1）、num_leaves（31-127）、min_data_in_leaf（20-100）。
+
+进阶调参
+
+针对不平衡数据：
+
+python
+复制
+lgb_params.update({
+    'scale_pos_weight': 7.3,  # 负样本数 / 正样本数
+    'metric': 'auc'           # 或 'average_precision'（PR-AUC）
+})
+正则化控制过拟合：调整 lambda_l1, lambda_l2, feature_fraction。
+
+特征工程实验
+
+对 Age 分桶（如 18-25, 26-35 等），观察是否提升模型性能。
+
+尝试 Target Encoding 替代原始类别编码（需用 sklearn.model_selection.KFold 防止目标泄漏）。
+
+模型解释
+
+使用 SHAP 值（shap.TreeExplainer）分析 Previously_Insured 对预测的影响。
+
+可视化决策树（lgb.create_tree_digraph）理解特征交互逻辑。
+
+总结
+该数据集能覆盖 LightGBM 的核心功能：
+
+高效处理类别特征（优于 XGBoost 的独热编码需求）
+
+自动处理缺失值
+
+快速训练与调参（GPU 模式可进一步加速）
+
+建议先从基线模型开始，逐步加入不平衡数据处理、特征工程和正则化策略，最终对比不同方法对 AUC/PR-AUC 的影响。

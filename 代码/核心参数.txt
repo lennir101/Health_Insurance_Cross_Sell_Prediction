@@ -1,0 +1,121 @@
+模型复杂度	num_leaves	每棵树最大叶子数	控制模型容量（越大越复杂）
+模型复杂度	max_depth	树最大深度	限制过拟合，默认不限制
+学习能力	learning_rate	每轮更新步长	越小越稳，但需要更多树
+学习能力	n_estimators	树的数量	通常设大点 + early stopping
+数据控制	min_child_samples	每个叶子最小样本数	控制分裂最小数据量，防过拟合
+数据控制	subsample	每棵树用多少行	行采样，防过拟合，提升泛化
+数据控制	colsample_bytree	每棵树用多少列	特征采样
+正则化	reg_alpha	L1正则	防过拟合，稀疏模型
+正则化	reg_lambda	L2正则	防过拟合，平滑权重
+样本不平衡	class_weight 或 scale_pos_weight	类别权重	适合 Response 极不均衡
+提前停止	early_stopping_rounds	停止条件	验证集性能不再提升则停止
+
+
+核心参数
+参数名	作用说明	调参范围/建议值
+learning_rate	学习率，控制每棵树的贡献权重（越小需更多树）	0.01 ~ 0.3（常用 0.05~0.1）
+n_estimators	树的数量（迭代次数）	50 ~ 2000（需配合早停）
+max_depth	树的最大深度（Leaf-wise 生长，通常不限制）	-1（无限制）或 3~15
+num_leaves	单棵树的最大叶子数（直接影响模型复杂度）	15 ~ 255（不超过 2^max_depth）
+
+
+防止过拟合参数
+参数名	作用说明	调参范围/建议值
+min_child_samples	叶子节点最小样本数（越大越保守）	20 ~ 200
+reg_alpha (lambda_l1)	L1 正则化系数（控制特征稀疏性）	0 ~ 10（0 表示禁用）
+reg_lambda (lambda_l2)	L2 正则化系数（控制权重平滑性）	0 ~ 10（0 表示禁用）
+subsample	行采样比例（随机选择训练样本）	0.6 ~ 1.0
+colsample_bytree	列采样比例（每棵树随机选择特征）	0.6 ~ 1.0
+
+
+类别特征与不平衡数据
+参数名	作用说明	调参范围/建议值
+categorical_feature	指定类别特征的列索引或列名	根据数据特征设置（如 ['Region_Code']）
+scale_pos_weight	正样本权重（用于不平衡分类，sum(neg)/sum(pos)）	根据正负样本比例计算（如 7.3）
+class_weight	类别权重（'balanced' 或自定义字典）	'balanced' 或手动设定
+
+
+效率优化参数
+参数名	作用说明	调参范围/建议值
+boosting_type	提升类型（'gbdt', 'dart', 'goss'）	'gbdt'（默认）或 'dart'
+n_jobs	并行线程数	-1（使用所有 CPU 核心）
+device	使用 CPU 或 GPU	'cpu' 或 'gpu'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+🎯【核心参数】（最常调）
+参数名	默认值	含义
+boosting_type	'gbdt'	提升类型（gbdt、dart、goss、rf）
+num_leaves	31	每棵树最大叶子数（越大模型越复杂）
+max_depth	-1	树最大深度（-1 表示不限制）
+learning_rate	0.1	学习率（建议调小配合早停）       0.05~0.1	0.01-0.05
+##n_estimators	100	最大迭代次数（树的数量）
+subsample	1.0	行采样比例（防过拟合）
+colsample_bytree	1.0	列采样比例（防过拟合）
+min_child_samples	20	最小叶子节点样本数（限制分裂）
+
+early_stopping_rounds	None	若验证集 N 轮未提升则停止
+
+    scale_pos_weight	1.0	正类样本权重（用于样本不平衡）       必须增加到手动粗调与网格搜索中，暂且使用经验值（负类样本数量/正类样本数量）
+    本次项目里：scale_pos_weight = 334399 / 46710 ≈ 7.15
+----------------------------------以上参数用于手动粗调
+min_child_weight	1e-3	最小叶子节点总 hessian 和
+reg_alpha	0.0	L1 正则化（稀疏）
+reg_lambda	0.0	L2 正则化（平滑）
+random_state	None	随机种子
+
+
+📊【训练控制】
+参数名	默认值	含义
+silent	'warn'	控制是否输出警告信息
+n_jobs	-1	并行线程数
+importance_type	'split'	特征重要性计算方式（split/gain）
+    early_stopping_rounds	None	若验证集 N 轮未提升则停止
+
+
+⚖️【类别不平衡处理】
+参数名	默认值	含义
+class_weight	None	类别权重（或设为 'balanced'）
+    scale_pos_weight	1.0	正类样本权重（用于样本不平衡）       必须增加到手动粗调与网格搜索中，暂且使用经验值（负类样本数量/正类样本数量）
+    本次项目里：scale_pos_weight = 334399 / 46710 ≈ 7.15
+
+
+
+🧠【DART 专用参数】（若使用 boosting_type='dart'）
+参数名	默认值	含义
+drop_rate	0.1	DART 丢弃率
+skip_drop	0.5	控制跳过概率
+xgboost_dart_mode	False	使用类似 xgboost 的 dart 模式
+
+
+🧪【其他常用参数】
+参数名	默认值	含义
+objective	None（自动推断）	可设为 'binary', 'multiclass' 等
+metric	None	评估指标（如 'auc', 'binary_logloss'）
+categorical_feature	None	指定哪些列为类别特征
+force_col_wise	False	是否强制使用列优先存储方式
+     max_bin	255	每个特征的最大分桶数（直方图算法）
+
+
+📦 补充：调参常用组合建议
+场景	推荐组合
+粗调结构	num_leaves, max_depth, min_child_samples
+泛化控制	subsample, colsample_bytree, reg_alpha, reg_lambda
+学习稳定性	learning_rate, early_stopping_rounds, n_estimators
+样本不平衡	scale_pos_weight, class_weight='balanced'
+优化指标	metric='auc', objective='binary'

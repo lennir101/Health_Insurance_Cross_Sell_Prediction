@@ -1,0 +1,10 @@
+subsample 5折交叉验证调参报告
+时间：2025-04-24 18:47:40
+
+固定参数：boosting_type=gbdt, num_leaves=6, max_depth=5, scale_pos_weight=2.0, threshold=0.33
+最佳 subsample：0.5
+F1-score：0.4515
+Recall：0.8093
+Precision：0.3131
+AUC：0.8522
+平均最佳树数（best_iteration_）：270
