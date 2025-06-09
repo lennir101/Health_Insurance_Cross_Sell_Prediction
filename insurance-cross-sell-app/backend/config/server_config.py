@@ -39,7 +39,7 @@ ORIGINS: 允許的跨域來源
     - 生產環境應限制為特定域名，如 'https://yourdomain.com'
 """
 CORS_CONFIG = {
-    'ORIGINS': '*'
+    'ORIGINS': ['http://localhost:5173', 'http://localhost:5174', 'http://127.0.0.1:5173', 'http://127.0.0.1:5174']
 }
 
 """

@@ -1,11 +1,43 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {PageContainer} from '@/components/layout';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {Card, CardContent, CardHeader, CardTitle, CardDescription} from '@/components/ui/card';
 import {Button} from '@/components/ui/button';
-import {Progress} from '@/components/ui/progress';
+
+// 引入展示組件
+import DataAnalysis from '@/components/presentation/DataAnalysis';
+import ModelExplanation from '@/components/presentation/ModelExplanation';
+import ParameterExploration from '@/components/presentation/ParameterExploration';
+import InteractiveModelDemo from '@/components/presentation/InteractiveModelDemo';
+import ApiService from '@/services/api';
+import {CorrelationMatrix} from '@/services/api';
 
 const PresentationPage: React.FC = () => {
+    // 用於存儲相關性矩陣數據
+    const [correlationMatrix, setCorrelationMatrix] = useState<CorrelationMatrix | undefined>(undefined);
+    const [loading, setLoading] = useState<boolean>(true);
+
+    // 獲取相關性矩陣數據
+    useEffect(() => {
+        const fetchCorrelationMatrix = async () => {
+            try {
+                setLoading(true);
+                const response = await ApiService.getCorrelationMatrix();
+                if (response.status === 200) {
+                    setCorrelationMatrix(response.data);
+                } else {
+                    console.error('獲取相關性矩陣失敗:', response.message);
+                }
+            } catch (error) {
+                console.error('API請求出錯:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchCorrelationMatrix();
+    }, []);
+
     return (
         <PageContainer
             title="保險交叉銷售預測項目演示"
@@ -56,62 +88,34 @@ const PresentationPage: React.FC = () => {
 
                 {/* 數據分析部分 */}
                 <TabsContent value="data" className="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>數據探索與特徵工程</CardTitle>
-                            <CardDescription>
-                                深入理解數據特徵與目標變量的關係
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <p>數據分析部分的內容將在這裡展示</p>
-                        </CardContent>
-                    </Card>
+                    {loading ? (
+                        <Card>
+                            <CardContent className="flex items-center justify-center p-8">
+                                <div className="text-center">
+                                    <div
+                                        className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
+                                    <p className="mt-4 text-muted-foreground">正在載入數據分析結果...</p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <DataAnalysis correlationMatrix={correlationMatrix}/>
+                    )}
                 </TabsContent>
 
                 {/* 模型原理部分 */}
                 <TabsContent value="model" className="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>機器學習模型原理</CardTitle>
-                            <CardDescription>
-                                理解XGBoost、隨機森林等算法在保險預測中的應用
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <p>模型原理部分的內容將在這裡展示</p>
-                        </CardContent>
-                    </Card>
+                    <ModelExplanation/>
                 </TabsContent>
 
                 {/* 模型優化部分 */}
                 <TabsContent value="tuning" className="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>參數調優與模型優化</CardTitle>
-                            <CardDescription>
-                                了解如何通過超參數調優提升模型性能
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <p>模型優化部分的內容將在這裡展示</p>
-                        </CardContent>
-                    </Card>
+                    <ParameterExploration/>
                 </TabsContent>
 
                 {/* 互動演示部分 */}
                 <TabsContent value="demo" className="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>交互式模型演示</CardTitle>
-                            <CardDescription>
-                                親身體驗預測模型的工作原理
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <p>互動演示部分的內容將在這裡展示</p>
-                        </CardContent>
-                    </Card>
+                    <InteractiveModelDemo/>
                 </TabsContent>
             </Tabs>
         </PageContainer>

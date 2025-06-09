@@ -70,11 +70,11 @@ const D3BubbleChart: React.FC<D3BubbleChartProps> = ({
             .sort((a, b) => (b.value || 0) - (a.value || 0));
 
         // 創建氣泡佈局
-        const bubbleLayout = d3.pack()
+        const bubbleLayout = d3.pack<any>()
             .size([width, height])
             .padding(padding);
 
-        bubbleLayout(root);
+        bubbleLayout(root as any);
 
         // 獲取所有組別
         const groups = Array.from(new Set(data.map(d => d.group || 'default')));
@@ -97,12 +97,12 @@ const D3BubbleChart: React.FC<D3BubbleChartProps> = ({
             .append('circle')
             .attr('r', 0) // 初始半徑為 0，用於動畫
             .style('fill', d => {
-                const bubble = d.data as BubbleData;
+                const bubble = d.data as unknown as BubbleData;
                 return bubble.color || colorScale(bubble.group || 'default') as string;
             })
             .style('fill-opacity', 0.8)
             .style('stroke', d => {
-                const bubble = d.data as BubbleData;
+                const bubble = d.data as unknown as BubbleData;
                 const color = bubble.color || colorScale(bubble.group || 'default') as string;
                 return d3.color(color)?.darker(0.5).toString() || '#000';
             })
@@ -116,7 +116,7 @@ const D3BubbleChart: React.FC<D3BubbleChartProps> = ({
             .style('fill', '#fff')
             .style('pointer-events', 'none')
             .text(d => {
-                const bubble = d.data as BubbleData;
+                const bubble = d.data as unknown as BubbleData;
                 return bubble.name;
             });
 
@@ -129,7 +129,7 @@ const D3BubbleChart: React.FC<D3BubbleChartProps> = ({
             .style('fill', '#fff')
             .style('pointer-events', 'none')
             .text(d => {
-                const bubble = d.data as BubbleData;
+                const bubble = d.data as unknown as BubbleData;
                 return valueFormat(bubble.value);
             });
 
@@ -137,17 +137,17 @@ const D3BubbleChart: React.FC<D3BubbleChartProps> = ({
         circles.transition()
             .duration(800)
             .delay((_, i) => i * 50)
-            .attr('r', d => d.r);
+            .attr('r', (d: any) => d.r);
 
         labels.transition()
             .duration(800)
             .delay((_, i) => i * 50 + 300)
-            .style('font-size', d => `${Math.min(2 * d.r / (d.data as BubbleData).name.length, d.r / 3)}px`);
+            .style('font-size', (d: any) => `${Math.min(2 * d.r / ((d.data as unknown as BubbleData).name.length), d.r / 3)}px`);
 
         valueLabels.transition()
             .duration(800)
             .delay((_, i) => i * 50 + 400)
-            .style('font-size', d => `${Math.min(d.r / 4, 14)}px`);
+            .style('font-size', (d: any) => `${Math.min(d.r / 4, 14)}px`);
 
         // 添加交互
         bubbleGroups
@@ -158,7 +158,7 @@ const D3BubbleChart: React.FC<D3BubbleChartProps> = ({
                     .duration(300)
                     .attr('r', (d: any) => d.r * 1.05);
 
-                const bubble = d.data as BubbleData;
+                const bubble = d.data as unknown as BubbleData;
                 setTooltip({
                     visible: true,
                     data: bubble,

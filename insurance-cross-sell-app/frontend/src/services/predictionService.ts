@@ -19,8 +19,19 @@ export interface CustomerData {
 export interface PredictionResult {
     prediction: number;
     probability: number;
-    features_importance: Record<string, number>;
-    threshold: number;
+    features_importance?: Record<string, number>;
+    current_model_params?: {
+        learning_rate: number;
+        max_depth: number;
+        n_estimators: number;
+        subsample: number;
+        colsample_bytree: number;
+        min_child_weight: number;
+        scale_pos_weight: number;
+        threshold: number;
+    };
+    model_params_desc?: Record<string, string>;
+    error?: string;
 }
 
 // 批量預測結果接口

@@ -20,6 +20,14 @@ MODEL_DIR = os.path.join(BASE_DIR.parent, 'models')
 MODEL_PATH = os.environ.get('MODEL_PATH', os.path.join(MODEL_DIR, 'lgbm_model.pkl'))
 THRESHOLD = float(os.environ.get('PREDICTION_THRESHOLD', '0.45'))  # 預設閾值
 
+# Redis 設置
+REDIS_ENABLED = os.environ.get('REDIS_ENABLED', 'True') == 'True'
+REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
+REDIS_PORT = int(os.environ.get('REDIS_PORT', '6379'))
+REDIS_DB = int(os.environ.get('REDIS_DB', '0'))
+REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD', None)  # 如果無密碼則為 None
+REDIS_TTL = int(os.environ.get('REDIS_TTL', '3600'))  # 默認緩存時間：1小時
+
 # 日誌設置
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
 LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'

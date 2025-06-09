@@ -54,7 +54,8 @@ const Prediction: React.FC = () => {
 
     const getPredictionClass = () => {
         if (!prediction) return '';
-        return prediction.probability > prediction.threshold
+        const threshold = prediction.current_model_params?.threshold || 0.5;
+        return prediction.probability > threshold
             ? 'bg-green-100 border-green-500'
             : 'bg-red-100 border-red-500';
     };
@@ -225,7 +226,7 @@ const Prediction: React.FC = () => {
                                 <div className="text-gray-700">
                                     <p>購買可能性: <span
                                         className="font-bold">{(prediction.probability * 100).toFixed(2)}%</span></p>
-                                    <p>決策閾值: {(prediction.threshold * 100).toFixed(2)}%</p>
+                                    <p>決策閾值: {((prediction.current_model_params?.threshold || 0.5) * 100).toFixed(2)}%</p>
                                 </div>
                             </div>
                         ) : (

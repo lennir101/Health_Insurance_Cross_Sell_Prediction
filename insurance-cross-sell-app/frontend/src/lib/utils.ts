@@ -9,10 +9,38 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * 格式化數字為百分比
+ * 格式化日期
  */
-export function formatPercent(value: number, decimalPlaces = 2): string {
-    return `${(value * 100).toFixed(decimalPlaces)}%`
+export function formatDate(input: string | number): string {
+    const date = new Date(input)
+    return date.toLocaleDateString("zh-TW", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+    })
+}
+
+/**
+ * 格式化貨幣
+ */
+export function formatCurrency(amount: number): string {
+    return new Intl.NumberFormat('zh-TW', {
+        style: 'currency',
+        currency: 'TWD',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(amount);
+}
+
+/**
+ * 格式化百分比
+ */
+export function formatPercent(value: number): string {
+    return new Intl.NumberFormat('zh-TW', {
+        style: 'percent',
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+    }).format(value);
 }
 
 /**
@@ -45,11 +73,30 @@ export function generateId(length = 8): string {
 /**
  * 安全地解析JSON
  */
-export function safeJsonParse<T>(value: string, fallback: T): T {
+export function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
+    if (!value) return fallback;
+    
     try {
+        // 如果輸入是對象而不是字符串，直接返回
+        if (typeof value === 'object') {
+            return value as unknown as T;
+        }
         return JSON.parse(value) as T
     } catch (error) {
+        console.error('JSON解析錯誤:', error, '原始值:', value);
         return fallback
+    }
+}
+
+/**
+ * 安全地轉換為 JSON 字符串
+ */
+export function safeJsonStringify(value: any, fallback: string = '{}'): string {
+    try {
+        return JSON.stringify(value);
+    } catch (error) {
+        console.error('JSON序列化錯誤:', error, '原始值:', value);
+        return fallback;
     }
 }
 

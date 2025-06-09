@@ -56,8 +56,62 @@ def predict_single():
         # 獲取請求數據
         data = request.json
 
-        # 執行預測
-        result = model_service.predict(data)
+        # 提取客戶特徵和模型參數
+        customer_features = {}
+        model_params = {}
+
+        # 區分客戶特徵和模型參數
+        if data:
+            # 基本客戶特徵
+            customer_features_keys = [
+                'gender', 'age', 'driving_license', 'region_code',
+                'previously_insured', 'vehicle_age', 'vehicle_damage',
+                'annual_premium', 'policy_sales_channel', 'vintage'
+            ]
+
+            # 提取客戶特徵
+            for key in customer_features_keys:
+                if key in data:
+                    customer_features[key] = data[key]
+
+            # 提取模型參數 (如果存在)
+            model_params_keys = [
+                'learning_rate', 'max_depth', 'n_estimators',
+                'subsample', 'colsample_bytree', 'min_child_weight',
+                'scale_pos_weight', 'threshold'
+            ]
+
+            # 創建模型參數字典
+            for key in model_params_keys:
+                if key in data:
+                    model_params[key] = data[key]
+
+        # 執行預測 (傳入模型參數)
+        result = model_service.predict(customer_features, model_params=model_params)
+
+        # 添加模型參數說明
+        result['model_params_desc'] = {
+            'learning_rate': '學習率 - 每次迭代對權重的調整幅度，較小的值可能需要更多迭代但有助於避免過擬合',
+            'max_depth': '最大深度 - 樹的最大深度，增加深度可以提高模型複雜性',
+            'n_estimators': '樹的數量 - 設置較大的值通常會提高性能，但也會增加計算開銷',
+            'subsample': '子採樣率 - 每棵樹使用的訓練數據比例，小於1可以減少過擬合',
+            'colsample_bytree': '特徵採樣率 - 每棵樹使用的特徵比例，小於1可以減少過擬合',
+            'min_child_weight': '最小子權重 - 控制樹分裂的難度，較大的值可以減少過擬合',
+            'scale_pos_weight': '正樣本權重比例 - 處理類別不平衡問題，增加少數類的權重',
+            'threshold': '決策閾值 - 將概率轉換為二元預測的閾值，調整可以平衡精確率和召回率'
+        }
+
+        # 添加當前使用的模型參數值
+        result['current_model_params'] = {
+            'learning_rate': model_service.get_param('learning_rate', 0.1),
+            'max_depth': model_service.get_param('max_depth', 8),
+            'n_estimators': model_service.get_param('n_estimators', 200),
+            'subsample': model_service.get_param('subsample', 0.8),
+            'colsample_bytree': model_service.get_param('colsample_bytree', 0.8),
+            'min_child_weight': model_service.get_param('min_child_weight', 2),
+            'scale_pos_weight': model_service.get_param('scale_pos_weight', 2),
+            'threshold': model_service.threshold
+        }
 
         return jsonify(result), 200
     except Exception as e:

@@ -155,41 +155,69 @@ class ModelService:
 
     def _prepare_features(self, df: pd.DataFrame) -> pd.DataFrame:
         """
-        準備模型特徵
+        預處理特徵，將輸入數據轉換為模型可接受的格式
         
         Args:
-            df: 數據框
+            df: 輸入數據框
             
         Returns:
             處理後的特徵數據框
         """
-        # 確保所有列名小寫
-        df.columns = [col.lower() for col in df.columns]
+        # 複製輸入數據，避免修改原始數據
+        processed_df = df.copy()
 
-        # 處理類別特徵
-        if 'gender' in df.columns and df['gender'].dtype == 'object':
-            df['gender'] = df['gender'].map({'Male': 1, 'Female': 0})
+        # 確保所有必要的特徵都存在
+        required_features = self.feature_names.copy()
 
-        if 'vehicle_age' in df.columns and df['vehicle_age'].dtype == 'object':
+        # 檢查并處理缺失的列
+        for feature in required_features:
+            if feature not in processed_df.columns:
+                # 特殊處理annual_premium_log字段
+                if feature == 'annual_premium_log' and 'annual_premium' in processed_df.columns:
+                    # 如果annual_premium存在，則計算其自然對數
+                    logger.info(f"從annual_premium計算{feature}字段")
+                    processed_df[feature] = processed_df['annual_premium'].apply(
+                        lambda x: np.log(x) if x > 0 else 0
+                    )
+                else:
+                    # 對於其他缺失列，添加全為0的列
+                    logger.warning(f"特徵 {feature} 在數據中不存在，已添加全為0的列")
+                    processed_df[feature] = 0
+
+        # 確保分類特徵正確編碼
+        if 'vehicle_age' in processed_df.columns:
+            # 車齡編碼
             vehicle_age_map = {
                 '< 1 Year': 0,
                 '1-2 Year': 1,
                 '> 2 Years': 2
             }
-            df['vehicle_age'] = df['vehicle_age'].map(vehicle_age_map)
+            processed_df['vehicle_age'] = processed_df['vehicle_age'].map(
+                lambda x: vehicle_age_map.get(x, 1)  # 默認為中間值
+            )
 
-        if 'vehicle_damage' in df.columns and df['vehicle_damage'].dtype == 'object':
-            df['vehicle_damage'] = df['vehicle_damage'].map({'Yes': 1, 'No': 0})
+        if 'vehicle_damage' in processed_df.columns:
+            # 車輛損壞編碼
+            damage_map = {
+                'Yes': 1,
+                'No': 0
+            }
+            processed_df['vehicle_damage'] = processed_df['vehicle_damage'].map(
+                lambda x: damage_map.get(x, 0)  # 默認為否
+            )
 
-        # 確保所有特徵都存在
-        for feature in self.feature_names:
-            if feature not in df.columns:
-                # 對於缺失特徵，添加全為0的列
-                df[feature] = 0
-                logger.warning(f"特徵 {feature} 在數據中不存在，已添加全為0的列")
+        if 'gender' in processed_df.columns:
+            # 性別編碼
+            gender_map = {
+                'Male': 0,
+                'Female': 1
+            }
+            processed_df['gender'] = processed_df['gender'].map(
+                lambda x: gender_map.get(x, 0)  # 默認為男性
+            )
 
-        # 提取需要的特徵
-        X = df[self.feature_names].copy()
+        # 選擇所需的特徵列，按照模型訓練時的順序
+        X = processed_df[required_features]
 
         return X
 
@@ -238,61 +266,124 @@ class ModelService:
             "feature_importance": self.get_feature_importance()
         }
 
-    def predict(self, data: Union[Dict[str, Any], pd.DataFrame], threshold: float = None) -> Dict[str, Any]:
+    def predict(self, data: Union[Dict[str, Any], pd.DataFrame], threshold: float = None,
+                model_params: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         單一預測
         
         Args:
             data: 客戶數據，字典或數據框
             threshold: 決策閾值，如果為None則使用默認閾值
+            model_params: 模型參數字典，用於臨時調整模型參數進行預測
             
         Returns:
             預測結果
         """
+        # 檢查模型是否已加載
         if self.model is None:
-            raise ValueError("模型未訓練或加載失敗")
+            raise ValueError("模型尚未加載，請先訓練或加載模型")
 
-        # 設置閾值
-        threshold = threshold or self.threshold
-
-        # 將字典轉換為數據框
+        # 將數據轉換為數據框
         if isinstance(data, dict):
-            data_df = pd.DataFrame([data])
+            df = pd.DataFrame([data])
         else:
-            data_df = data.copy()
+            df = data.copy()
 
         # 準備特徵
-        X = self._prepare_features(data_df)
+        X = self._prepare_features(df)
 
-        # 獲取預測概率
-        if hasattr(self.model, 'predict_proba'):
-            probas = self.model.predict_proba(X)[:, 1]
-        else:
-            probas = self.model.predict(X)
+        try:
+            # 處理不同模型類型的預測邏輯
+            if model_params and self.model_type == 'xgboost':
+                # 如果提供了模型參數，創建一個臨時模型使用臨時參數
+                logger.info(f"使用臨時參數進行預測: {model_params}")
+                # 複製原始模型參數
+                temp_params = self.model.get_params()
+                # 更新提供的參數
+                for key, value in model_params.items():
+                    if key != 'threshold':  # threshold不是模型參數，而是決策閾值
+                        temp_params[key] = value
 
-        # 根據閾值進行分類
-        predictions = (probas >= threshold).astype(int)
+                # 創建臨時模型
+                temp_model = xgb.XGBClassifier(**temp_params)
+                # 使用原始模型的訓練數據來"熱啟動"
+                if hasattr(self.model, 'get_booster'):
+                    # 複製原始模型的權重
+                    temp_model._Booster = self.model.get_booster()
+                    # 確保XGBClassifier有n_classes_屬性
+                    if hasattr(self.model, 'n_classes_'):
+                        temp_model.n_classes_ = self.model.n_classes_
+                    else:
+                        # 如果原始模型沒有n_classes_屬性，則設置為2（二分類）
+                        temp_model.n_classes_ = 2
 
-        # 返回結果
-        results = []
-        for i in range(len(data_df)):
-            result = {
-                "probability": float(probas[i]),
-                "prediction": int(predictions[i]),
-                "threshold": float(threshold)
+                    # 執行預測
+                    pred_proba = temp_model.predict_proba(X)[:, 1]
+                else:
+                    # 如果不支持熱啟動，使用原始模型
+                    logger.warning("不支持熱啟動，使用原始模型")
+                    pred_proba = self.model.predict_proba(X)[:, 1]
+            else:
+                # 使用原始模型
+                # 確保模型有predict_proba方法
+                if hasattr(self.model, 'predict_proba'):
+                    pred_proba = self.model.predict_proba(X)[:, 1]
+                else:
+                    # 如果模型沒有predict_proba方法，則使用predict
+                    logger.warning("模型沒有predict_proba方法，使用predict")
+                    pred_proba = self.model.predict(X)
+        except Exception as e:
+            logger.error(f"預測過程中出錯: {str(e)}")
+            # 返回詳細錯誤信息
+            return {
+                "error": f"預測失敗: {str(e)}",
+                "probability": 0.5,
+                "prediction": 0,
+                "features_importance": self.get_feature_importance()
             }
 
-            # 如果原始數據是字典，添加原始數據
-            if isinstance(data, dict):
-                result["customer_data"] = data
+        # 決定閾值
+        if threshold is None:
+            # 優先使用model_params中的threshold
+            if model_params and 'threshold' in model_params:
+                threshold = float(model_params['threshold'])
+            else:
+                threshold = self.threshold
 
-            results.append(result)
+        # 二分類預測結果
+        pred_class = (pred_proba >= threshold).astype(int)
 
-        # 如果只有一個結果，返回單個結果
-        if len(results) == 1:
-            return results[0]
+        # 獲取特徵重要性
+        feature_importance = self.get_feature_importance()
 
-        return {"results": results}
+        # 創建結果字典
+        result = {
+            "probability": float(pred_proba[0]),  # 轉換為Python基本類型
+            "prediction": int(pred_class[0]),
+            "features_importance": feature_importance
+        }
+
+        return result
+
+    def get_param(self, param_name: str, default_value: Any = None) -> Any:
+        """
+        獲取模型參數值
+        
+        Args:
+            param_name: 參數名稱
+            default_value: 如果參數不存在時的默認值
+            
+        Returns:
+            參數值
+        """
+        if self.model is None:
+            return default_value
+
+        try:
+            params = self.model.get_params()
+            return params.get(param_name, default_value)
+        except:
+            return default_value
 
     def batch_predict(self, data: pd.DataFrame, threshold: float = None) -> List[Dict[str, Any]]:
         """

@@ -11,7 +11,7 @@ from sklearn.preprocessing import LabelEncoder
 # 導入配置
 from config.settings import MODEL_PATH, THRESHOLD
 from utils.data_processor import preprocess_customer_data
-from services.prediction_service import make_prediction, get_feature_importance
+from services.prediction_service import make_prediction, get_feature_importance, get_model_metrics
 from services.data_service import DataService
 
 prediction_bp = Blueprint('prediction', __name__, url_prefix='/api')
@@ -110,13 +110,45 @@ def predict_single():
 
         # 獲取特徵重要性
         features_importance = get_feature_importance(processed_data)
+        
+        # 獲取當前模型參數
+        model_metrics = get_model_metrics()
+        
+        # 模型參數說明
+        model_params_desc = {
+            'learning_rate': '學習率 - 每次迭代對權重的調整幅度，較小的值可能需要更多迭代但有助於避免過擬合',
+            'max_depth': '最大深度 - 樹的最大深度，增加深度可以提高模型複雜性',
+            'n_estimators': '樹的數量 - 設置較大的值通常會提高性能，但也會增加計算開銷',
+            'subsample': '子採樣率 - 每棵樹使用的訓練數據比例，小於1可以減少過擬合',
+            'colsample_bytree': '特徵採樣率 - 每棵樹使用的特徵比例，小於1可以減少過擬合',
+            'min_child_weight': '最小子權重 - 控制樹分裂的難度，較大的值可以減少過擬合',
+            'scale_pos_weight': '正樣本權重比例 - 處理類別不平衡問題，增加少數類的權重',
+            'threshold': '決策閾值 - 將概率轉換為二元預測的閾值，調整可以平衡精確率和召回率'
+        }
+        
+        # 當前模型參數
+        current_model_params = {
+            'learning_rate': 0.1,
+            'max_depth': 8,
+            'n_estimators': 200,
+            'subsample': 0.8,
+            'colsample_bytree': 0.8,
+            'min_child_weight': 2,
+            'scale_pos_weight': 2,
+            'threshold': float(THRESHOLD)
+        }
 
-        return jsonify({
+        # 確保所有數值都是 JSON 可序列化的
+        result = {
             'prediction': int(prediction),
             'probability': float(probability),
-            'threshold': THRESHOLD,
-            'features_importance': features_importance
-        })
+            'threshold': float(THRESHOLD),
+            'features_importance': features_importance,
+            'current_model_params': current_model_params,
+            'model_params_desc': model_params_desc
+        }
+        
+        return jsonify(result)
 
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
