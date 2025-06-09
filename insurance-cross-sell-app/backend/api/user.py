@@ -5,6 +5,7 @@ from models.user import User
 
 user_bp = Blueprint('user', __name__)
 
+
 @user_bp.route('', methods=['GET'])
 @admin_required
 def get_users():
@@ -16,6 +17,7 @@ def get_users():
         "users": [user.to_dict() for user in users],
         "count": len(users)
     }), 200
+
 
 @user_bp.route('/<int:user_id>', methods=['GET'])
 @jwt_required
@@ -29,15 +31,16 @@ def get_user(user_id):
         current_user = get_user_by_id(request.user_id)
         if not current_user or not current_user.is_admin:
             return jsonify({"error": "無權訪問"}), 403
-    
+
     user = get_user_by_id(user_id)
-    
+
     if not user:
         return jsonify({"error": "用戶不存在"}), 404
-    
+
     return jsonify({
         "user": user.to_dict()
     }), 200
+
 
 @user_bp.route('/<int:user_id>', methods=['PUT'])
 @jwt_required
@@ -51,22 +54,23 @@ def update(user_id):
         current_user = get_user_by_id(request.user_id)
         if not current_user or not current_user.is_admin:
             return jsonify({"error": "無權訪問"}), 403
-    
+
     data = request.json
-    
+
     if not data:
         return jsonify({"error": "無效的數據"}), 400
-    
+
     # 更新用戶
     user, error = update_user(user_id, data)
-    
+
     if error:
         return jsonify({"error": error}), 400
-    
+
     return jsonify({
         "message": "更新成功",
         "user": user.to_dict()
     }), 200
+
 
 @user_bp.route('/<int:user_id>/admin', methods=['PUT'])
 @admin_required
@@ -75,20 +79,20 @@ def toggle_admin(user_id):
     切換用戶的管理員狀態（僅管理員可訪問）
     """
     user = get_user_by_id(user_id)
-    
+
     if not user:
         return jsonify({"error": "用戶不存在"}), 404
-    
+
     # 檢查是否是最後一個管理員
     if user.is_admin and User.query.filter_by(is_admin=True).count() <= 1:
         return jsonify({"error": "不能移除最後一個管理員"}), 400
-    
+
     # 切換管理員狀態
     user.is_admin = not user.is_admin
     from core.database import db
     db.session.commit()
-    
+
     return jsonify({
         "message": f"用戶 {user.username} 管理員狀態已更改為 {user.is_admin}",
         "user": user.to_dict()
-    }), 200 
+    }), 200

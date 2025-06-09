@@ -13,6 +13,7 @@ _label_encoders = {
     'vehicle_damage': LabelEncoder().fit(['Yes', 'No'])
 }
 
+
 def preprocess_customer_data(customer_data):
     """
     預處理客戶數據，轉換為模型所需的格式
@@ -26,10 +27,10 @@ def preprocess_customer_data(customer_data):
     try:
         # 創建特徵字典的副本
         processed_data = customer_data.copy()
-        
+
         # 1. 標準化欄位名稱（轉換為大寫形式，與模型一致）
         processed_data = {k.lower(): v for k, v in processed_data.items()}
-        
+
         # 2. 對分類特徵進行標籤編碼
         for feature, encoder in _label_encoders.items():
             if feature in processed_data:
@@ -39,29 +40,30 @@ def preprocess_customer_data(customer_data):
                     logger.error(f"標籤編碼錯誤 ({feature}): {e}")
                     # 如果編碼失敗，使用預設值
                     processed_data[feature] = 0
-        
+
         # 3. 特徵工程：添加年齡組特徵
         if 'age' in processed_data:
             processed_data['age_group'] = _get_age_group(processed_data['age'])
-        
+
         # 4. 特徵工程：添加年保費對數特徵
         if 'annual_premium' in processed_data:
             processed_data['annual_premium_log'] = math.log1p(processed_data['annual_premium'])
-        
+
         # 5. 移除不需要的特徵（如果有的話）
         if 'id' in processed_data:
             del processed_data['id']
-        
+
         # 6. 確保所有數值都是浮點數，避免數據類型問題
         for key, value in processed_data.items():
             if isinstance(value, (int, float)):
                 processed_data[key] = float(value)
-                
+
         return processed_data
-    
+
     except Exception as e:
         logger.error(f"數據預處理錯誤: {e}")
         raise ValueError(f"數據預處理錯誤: {e}")
+
 
 def _get_age_group(age):
     """
@@ -82,6 +84,7 @@ def _get_age_group(age):
     else:
         return 3  # 老年
 
+
 def process_batch_data(batch_data):
     """
     批量處理多個客戶數據
@@ -94,7 +97,7 @@ def process_batch_data(batch_data):
     """
     processed_batch = []
     errors = []
-    
+
     for i, customer_data in enumerate(batch_data):
         try:
             processed_data = preprocess_customer_data(customer_data)
@@ -102,8 +105,9 @@ def process_batch_data(batch_data):
         except Exception as e:
             logger.error(f"第 {i} 筆數據處理錯誤: {e}")
             errors.append((i, str(e)))
-    
+
     return processed_batch, errors
+
 
 def create_sample_data():
     """
@@ -125,6 +129,7 @@ def create_sample_data():
         'vintage': 90
     }
 
+
 def validate_prediction_input(data):
     """
     驗證預測輸入數據是否有效
@@ -141,11 +146,11 @@ def validate_prediction_input(data):
         'Previously_Insured', 'Vehicle_Age', 'Vehicle_Damage',
         'Annual_Premium', 'Policy_Sales_Channel', 'Vintage'
     ]
-    
+
     missing_fields = [field for field in required_fields if field not in data]
     if missing_fields:
         return False, f"缺少必要字段: {', '.join(missing_fields)}"
-    
+
     # 檢查數據類型
     try:
         # 數值型字段
@@ -153,27 +158,28 @@ def validate_prediction_input(data):
         for field in numeric_fields:
             if not isinstance(data[field], (int, float)) or data[field] < 0:
                 return False, f"字段 {field} 必須為非負數值"
-        
+
         # 布爾型字段（0或1）
         binary_fields = ['Driving_License', 'Previously_Insured']
         for field in binary_fields:
             if data[field] not in [0, 1]:
                 return False, f"字段 {field} 必須為0或1"
-        
+
         # 類別字段檢查
         if data['Gender'] not in ['Male', 'Female']:
             return False, "性別必須為 'Male' 或 'Female'"
-        
+
         if data['Vehicle_Age'] not in ['< 1 Year', '1-2 Year', '> 2 Years']:
             return False, "車齡必須為 '< 1 Year', '1-2 Year' 或 '> 2 Years'"
-        
+
         if data['Vehicle_Damage'] not in ['Yes', 'No']:
             return False, "車輛損壞必須為 'Yes' 或 'No'"
-        
+
     except Exception as e:
         return False, f"數據驗證錯誤: {str(e)}"
-    
+
     return True, None
+
 
 def normalize_features(data):
     """
@@ -186,33 +192,34 @@ def normalize_features(data):
         dict: 標準化後的數據
     """
     normalized = {}
-    
+
     # 年齡標準化 (18-85 -> 0-1)
     normalized['Age'] = (data['Age'] - 18) / (85 - 18)
-    
+
     # 保費標準化 (對數轉換後的值標準化)
     log_premium = np.log1p(data['Annual_Premium'])
     normalized['Annual_Premium'] = (log_premium - 8) / (12 - 8)  # 根據實際分布調整
-    
+
     # 其他數值特徵...
     normalized['Vintage'] = data['Vintage'] / 300  # 假設最大值為300
-    
+
     # 二元特徵直接使用
     normalized['Driving_License'] = data['Driving_License']
     normalized['Previously_Insured'] = data['Previously_Insured']
-    
+
     # 類別特徵轉換
     normalized['Gender'] = 1 if data['Gender'] == 'Male' else 0
-    
+
     normalized['Vehicle_Age'] = {
         '< 1 Year': 0,
         '1-2 Year': 0.5,
         '> 2 Years': 1
     }.get(data['Vehicle_Age'], 0)
-    
+
     normalized['Vehicle_Damage'] = 1 if data['Vehicle_Damage'] == 'Yes' else 0
-    
+
     return normalized
+
 
 def calculate_feature_importance(data, result):
     """
@@ -239,14 +246,14 @@ def calculate_feature_importance(data, result):
         'Region_Code': 0.03,
         'Policy_Sales_Channel': 0.02,
     }
-    
+
     # 根據實際數據調整重要性
     if data['Previously_Insured'] == 1:
         importances['Previously_Insured'] = 0.35  # 如果已有車險，這個特徵更重要
         importances['Age'] = 0.10  # 相應減少其他特徵的重要性
-    
+
     if data['Vehicle_Damage'] == 'Yes':
         importances['Vehicle_Damage'] = 0.25
         importances['Annual_Premium'] = 0.05
-    
-    return importances 
+
+    return importances

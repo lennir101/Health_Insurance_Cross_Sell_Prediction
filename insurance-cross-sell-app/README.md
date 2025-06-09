@@ -35,36 +35,39 @@
 系統由以下主要模塊組成：
 
 1. **前端展示層**：負責用戶交互和數據展示
-   - 儀表板頁面：數據分析和可視化
-   - 預測頁面：單一客戶預測功能
-   - 批量預測頁面：批量數據處理功能
+    - 儀表板頁面：數據分析和可視化
+    - 預測頁面：單一客戶預測功能
+    - 批量預測頁面：批量數據處理功能
 
 2. **後端服務層**：提供API接口和業務邏輯
-   - 預測服務：處理預測請求和返回結果
-   - 數據處理：數據清洗和特徵處理
-   - 模型加載：懶加載模型以提高性能
+    - 預測服務：處理預測請求和返回結果
+    - 數據處理：數據清洗和特徵處理
+    - 模型加載：懶加載模型以提高性能
 
 3. **機器學習層**：提供預測模型和分析功能
-   - 訓練好的分類模型
-   - 特徵重要性分析
-   - 模型評估指標
+    - 訓練好的分類模型
+    - 特徵重要性分析
+    - 模型評估指標
 
 ## 快速開始
 
 ### 前端部署
 
 1. 安裝依賴：
+
 ```bash
 cd frontend
 npm install
 ```
 
 2. 啟動開發服務器：
+
 ```bash
 npm run dev
 ```
 
 3. 構建生產版本：
+
 ```bash
 npm run build
 ```
@@ -72,17 +75,20 @@ npm run build
 ### 後端部署
 
 1. 安裝依賴：
+
 ```bash
 cd backend
 pip install -r requirements.txt
 ```
 
 2. 啟動開發服務器：
+
 ```bash
 python app.py
 ```
 
 3. 使用生產服務器（生產環境）：
+
 ```bash
 gunicorn app:app
 ```
@@ -140,4 +146,65 @@ insurance-cross-sell-app/
 
 ## 許可證
 
-MIT License 
+MIT License
+
+## 配置系統
+
+本系統支持自定義配置，包括前後端端口設置。這些配置存儲在單獨的配置文件中，方便用戶修改。
+
+### 前端配置
+
+前端配置文件位於 `frontend/src/config/appConfig.ts`，包含以下主要設置：
+
+```typescript
+export const API_CONFIG = {
+    BACKEND_HOST: 'http://localhost', // 後端主機地址
+    BACKEND_PORT: 8080,               // 後端端口
+    API_PREFIX: '/api'                // API路徑前綴
+};
+
+export const APP_CONFIG = {
+    APP_NAME: '保險交叉銷售預測系統',
+    DEFAULT_THEME: 'light'            // 默認主題 ('light' | 'dark' | 'system')
+};
+```
+
+### 後端配置
+
+後端配置文件位於 `backend/config/server_config.py`，包含以下主要設置：
+
+```python
+SERVER_CONFIG = {
+    'HOST': '0.0.0.0',  # 監聽所有網絡接口
+    'PORT': 8080,  # 服務器端口
+    'DEBUG': True  # 調試模式
+}
+
+CORS_CONFIG = {
+    'ORIGINS': '*'  # 允許的跨域來源
+}
+```
+
+### 啟動系統
+
+我們提供了方便的啟動腳本：
+
+- **Linux/macOS**：使用 `./start.sh`
+- **Windows**：使用 `start.bat`
+
+這些腳本提供以下選項：
+
+1. 啟動後端服務
+2. 啟動前端開發服務器
+3. 同時啟動前後端服務
+4. 退出
+
+### 端口修改注意事項
+
+1. 修改後端端口時，需要同時更新前後端配置：
+    - 更新 `backend/config/server_config.py` 中的 `PORT` 值
+    - 更新 `frontend/src/config/appConfig.ts` 中的 `BACKEND_PORT` 值
+
+2. macOS 用戶注意：系統的 AirPlay 服務會佔用 5000 端口，如果使用此端口，請先禁用 AirPlay 或選擇其他端口。
+
+3. 確保選擇的端口未被其他應用程式使用。 

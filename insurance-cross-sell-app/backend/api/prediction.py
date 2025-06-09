@@ -5,6 +5,7 @@ from core.auth import jwt_required
 
 prediction_bp = Blueprint('prediction', __name__)
 
+
 @prediction_bp.route('', methods=['POST'])
 @jwt_required
 def predict():
@@ -13,14 +14,14 @@ def predict():
     """
     data = request.json
     user_id = request.user_id
-    
+
     if not data:
         return jsonify({"error": "無效的輸入數據"}), 400
-    
+
     try:
         # 進行預測
         result = predict_insurance_interest(data, user_id)
-        
+
         return jsonify({
             "message": "預測成功",
             "result": result
@@ -30,6 +31,7 @@ def predict():
     except Exception as e:
         return jsonify({"error": f"預測失敗: {str(e)}"}), 500
 
+
 @prediction_bp.route('', methods=['GET'])
 @jwt_required
 def history():
@@ -38,11 +40,11 @@ def history():
     """
     user_id = request.user_id
     limit = request.args.get('limit', 10, type=int)
-    
+
     try:
         # 獲取預測歷史
         predictions = get_user_predictions(user_id, limit)
-        
+
         return jsonify({
             "message": "獲取歷史記錄成功",
             "predictions": predictions,
@@ -50,6 +52,7 @@ def history():
         }), 200
     except Exception as e:
         return jsonify({"error": f"獲取歷史記錄失敗: {str(e)}"}), 500
+
 
 @prediction_bp.route('/sample', methods=['GET'])
 def sample_data():
@@ -68,11 +71,12 @@ def sample_data():
         "Policy_Sales_Channel": 152,
         "Vintage": 217
     }
-    
+
     return jsonify({
         "message": "獲取樣本數據成功",
         "sample": sample
     }), 200
+
 
 @prediction_bp.route('/bulk', methods=['POST'])
 @jwt_required
@@ -82,16 +86,16 @@ def bulk_predict():
     """
     data = request.json
     user_id = request.user_id
-    
+
     if not data or not isinstance(data, list):
         return jsonify({"error": "無效的輸入數據，應為列表"}), 400
-    
+
     try:
         results = []
         for item in data:
             result = predict_insurance_interest(item, user_id)
             results.append(result)
-        
+
         return jsonify({
             "message": "批量預測成功",
             "results": results,
@@ -100,4 +104,4 @@ def bulk_predict():
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
     except Exception as e:
-        return jsonify({"error": f"批量預測失敗: {str(e)}"}), 500 
+        return jsonify({"error": f"批量預測失敗: {str(e)}"}), 500

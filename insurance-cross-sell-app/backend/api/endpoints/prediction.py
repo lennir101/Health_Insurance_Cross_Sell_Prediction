@@ -12,8 +12,13 @@ from sklearn.preprocessing import LabelEncoder
 from config.settings import MODEL_PATH, THRESHOLD
 from utils.data_processor import preprocess_customer_data
 from services.prediction_service import make_prediction, get_feature_importance
+from services.data_service import DataService
 
 prediction_bp = Blueprint('prediction', __name__, url_prefix='/api')
+
+# 初始化服務
+data_service = DataService()
+
 
 # 數據模型
 class CustomerData(BaseModel):
@@ -27,45 +32,47 @@ class CustomerData(BaseModel):
     annual_premium: float
     policy_sales_channel: float
     vintage: int
-    
+
     @validator('gender')
     def validate_gender(cls, v):
         if v not in ['Male', 'Female']:
             raise ValueError('性別必須為Male或Female')
         return v
-    
+
     @validator('age')
     def validate_age(cls, v):
         if v < 18 or v > 100:
             raise ValueError('年齡必須在18-100之間')
         return v
-    
+
     @validator('driving_license')
     def validate_driving_license(cls, v):
         if v not in [0, 1]:
             raise ValueError('駕照狀態必須為0或1')
         return v
-    
+
     @validator('previously_insured')
     def validate_previously_insured(cls, v):
         if v not in [0, 1]:
             raise ValueError('已有保險狀態必須為0或1')
         return v
-    
+
     @validator('vehicle_age')
     def validate_vehicle_age(cls, v):
         if v not in ['< 1 Year', '1-2 Year', '> 2 Years']:
             raise ValueError('車齡必須為< 1 Year、1-2 Year或> 2 Years')
         return v
-    
+
     @validator('vehicle_damage')
     def validate_vehicle_damage(cls, v):
         if v not in ['Yes', 'No']:
             raise ValueError('車輛損壞必須為Yes或No')
         return v
 
+
 class BatchPredictionRequest(BaseModel):
     customers: List[CustomerData]
+
 
 # 路由
 @prediction_bp.route('/predict', methods=['POST'])
@@ -91,31 +98,32 @@ def predict_single():
     """
     try:
         data = request.get_json()
-        
+
         # 驗證輸入數據
         customer = CustomerData(**data)
-        
+
         # 預處理數據
         processed_data = preprocess_customer_data(customer.dict())
-        
+
         # 進行預測
         probability, prediction = make_prediction(processed_data)
-        
+
         # 獲取特徵重要性
         features_importance = get_feature_importance(processed_data)
-        
+
         return jsonify({
             'prediction': int(prediction),
             'probability': float(probability),
             'threshold': THRESHOLD,
             'features_importance': features_importance
         })
-    
+
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
-    
+
     except Exception as e:
         return jsonify({'error': f'預測失敗: {str(e)}'}), 500
+
 
 @prediction_bp.route('/predict/batch', methods=['POST'])
 def predict_batch():
@@ -140,47 +148,48 @@ def predict_batch():
     """
     try:
         data = request.get_json()
-        
+
         # 驗證輸入數據
         batch_request = BatchPredictionRequest(**data)
-        
+
         results = []
         success_count = 0
-        
+
         for i, customer in enumerate(batch_request.customers):
             try:
                 # 預處理數據
                 processed_data = preprocess_customer_data(customer.dict())
-                
+
                 # 進行預測
                 probability, prediction = make_prediction(processed_data)
-                
+
                 results.append({
                     'id': i,
                     'prediction': int(prediction),
                     'probability': float(probability)
                 })
-                
+
                 success_count += 1
-                
+
             except Exception as e:
                 # 記錄錯誤但繼續處理其他數據
                 results.append({
                     'id': i,
                     'error': str(e)
                 })
-        
+
         return jsonify({
             'predictions': results,
             'success_count': success_count,
             'total_count': len(batch_request.customers)
         })
-    
+
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
-    
+
     except Exception as e:
         return jsonify({'error': f'批量預測失敗: {str(e)}'}), 500
+
 
 @prediction_bp.route('/model/metrics', methods=['GET'])
 def get_model_metrics():
@@ -208,11 +217,12 @@ def get_model_metrics():
                 [642, 1358]
             ]
         }
-        
+
         return jsonify(metrics)
-    
+
     except Exception as e:
         return jsonify({'error': f'獲取模型指標失敗: {str(e)}'}), 500
+
 
 @prediction_bp.route('/model/feature-importance', methods=['GET'])
 def get_model_feature_importance():
@@ -240,11 +250,12 @@ def get_model_feature_importance():
             'Region_Code': 0.032,
             'Policy_Sales_Channel': 0.043
         }
-        
+
         return jsonify(feature_importance)
-    
+
     except Exception as e:
         return jsonify({'error': f'獲取特徵重要性失敗: {str(e)}'}), 500
+
 
 @prediction_bp.route('/model/threshold-analysis', methods=['GET'])
 def get_threshold_analysis():
@@ -262,19 +273,21 @@ def get_threshold_analysis():
     try:
         # 這裡應該從評估結果中讀取，這裡使用示例數據
         thresholds = []
-        
+
         for threshold in np.arange(0.1, 1.0, 0.05):
             thresholds.append({
                 'threshold': round(threshold, 2),
                 'precision': round(0.5 + threshold * 0.5, 3),
                 'recall': round(1.0 - threshold * 0.8, 3),
-                'f1': round(0.65 + (threshold - 0.5) * 0.2, 3) if threshold <= 0.5 else round(0.75 - (threshold - 0.5) * 0.4, 3)
+                'f1': round(0.65 + (threshold - 0.5) * 0.2, 3) if threshold <= 0.5 else round(
+                    0.75 - (threshold - 0.5) * 0.4, 3)
             })
-        
+
         return jsonify(thresholds)
-    
+
     except Exception as e:
         return jsonify({'error': f'獲取閾值分析失敗: {str(e)}'}), 500
+
 
 @prediction_bp.route('/statistics', methods=['GET'])
 def get_statistics():
@@ -334,8 +347,31 @@ def get_statistics():
                 }
             }
         }
-        
+
         return jsonify(statistics)
-    
+
     except Exception as e:
-        return jsonify({'error': f'獲取統計信息失敗: {str(e)}'}), 500 
+        return jsonify({'error': f'獲取統計信息失敗: {str(e)}'}), 500
+
+
+@prediction_bp.route('/data/correlation', methods=['GET'])
+def get_correlation_matrix():
+    """
+    獲取數值特徵之間的相關性矩陣
+    ---
+    tags:
+      - data
+    responses:
+      200:
+        description: 相關性矩陣數據
+      500:
+        description: 服務器錯誤
+    """
+    try:
+        # 獲取相關性矩陣
+        correlation_matrix = data_service.get_correlation_matrix()
+
+        return jsonify(correlation_matrix)
+
+    except Exception as e:
+        return jsonify({'error': f'獲取相關性矩陣失敗: {str(e)}'}), 500

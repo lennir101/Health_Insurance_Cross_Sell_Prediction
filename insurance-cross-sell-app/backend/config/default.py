@@ -30,7 +30,7 @@ CORS_ORIGINS = os.environ.get('CORS_ORIGINS', '*')
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'archive_data')
 
 # 模型目錄
-MODEL_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'ml_models')
+MODEL_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'ml_models')
 MODEL_PATH = os.environ.get('MODEL_PATH', os.path.join(MODEL_DIR, 'xgboost_model.pkl'))
 THRESHOLD = float(os.environ.get('PREDICTION_THRESHOLD', '0.45'))  # 預設閾值
 
@@ -74,6 +74,7 @@ DERIVED_FEATURES = [
     'annual_premium_log'
 ]
 
+
 # API響應狀態碼
 class StatusCode:
     SUCCESS = 200
@@ -83,4 +84,4 @@ class StatusCode:
     FORBIDDEN = 403
     NOT_FOUND = 404
     METHOD_NOT_ALLOWED = 405
-    INTERNAL_SERVER_ERROR = 500 
+    INTERNAL_SERVER_ERROR = 500

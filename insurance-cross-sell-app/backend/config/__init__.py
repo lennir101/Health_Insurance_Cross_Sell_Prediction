@@ -12,11 +12,12 @@ config_dict = {
     'default': DevelopmentConfig
 }
 
+
 def get_config(config_name=None):
     """
     獲取配置類
     """
     if not config_name:
         config_name = os.environ.get('FLASK_ENV', 'default')
-    
-    return config_dict.get(config_name, config_dict['default']) 
+
+    return config_dict.get(config_name, config_dict['default'])

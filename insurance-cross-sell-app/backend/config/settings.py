@@ -53,6 +53,7 @@ DERIVED_FEATURES = [
     'annual_premium_log'
 ]
 
+
 # API響應狀態碼
 class StatusCode:
     SUCCESS = 200
@@ -62,4 +63,4 @@ class StatusCode:
     FORBIDDEN = 403
     NOT_FOUND = 404
     METHOD_NOT_ALLOWED = 405
-    INTERNAL_SERVER_ERROR = 500 
+    INTERNAL_SERVER_ERROR = 500
